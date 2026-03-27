@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LeaveDesk – Employee Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F0EB; --surface: #FDFAF7; --card: #FFFFFF;
+    --ink: #1A1410; --ink-muted: #7A6E66;
+    --accent: #C84B31; --accent-light: #FDEAE6;
+    --teal: #2D6A6A; --teal-light: #E0EEEE;
+    --gold: #D4943A; --gold-light: #FBF0E0;
+    --approved: #2D6A4F; --approved-light: #D8F3E6;
+    --half: #7B3FA0; --half-light: #F0E6F8;
+    --border: #E8E0D8; --shadow: 0 4px 24px rgba(26,20,16,0.07); --radius: 16px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; overflow-x: hidden; }
+
+  /* AUTH */
+  .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1A1410 0%, #2D1F18 50%, #3D2B20 100%); position: relative; overflow: hidden; }
+  .auth-screen::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 70%, rgba(200,75,49,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(45,106,106,0.12) 0%, transparent 50%); }
+  .auth-card { position: relative; z-index: 1; background: rgba(253,250,247,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 48px 44px; width: 420px; text-align: center; animation: fadeUp 0.6s ease both; }
+  .auth-logo { font-family: 'DM Serif Display', serif; font-size: 36px; color: #FDFAF7; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .auth-logo span { color: var(--accent); }
+  .auth-tagline { font-size: 13px; color: rgba(253,250,247,0.45); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; }
+  .auth-label { display: block; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(253,250,247,0.5); margin-bottom: 8px; }
+  .auth-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px 18px; font-family: 'DM Sans', sans-serif; font-size: 15px; color: #FDFAF7; outline: none; transition: border-color 0.2s, background 0.2s; margin-bottom: 24px; }
+  .auth-input:focus { border-color: var(--accent); background: rgba(200,75,49,0.06); }
+  .auth-input::placeholder { color: rgba(253,250,247,0.25); }
+  .auth-btn { width: 100%; background: var(--accent); border: none; border-radius: 12px; padding: 15px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: #fff; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, background 0.15s; }
+  .auth-btn:hover { background: #B03C24; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200,75,49,0.35); }
+  .auth-btn:disabled { background: rgba(200,75,49,0.4); cursor: not-allowed; transform: none; box-shadow: none; }
+  .auth-back { background: none; border: none; color: rgba(253,250,247,0.4); font-size: 13px; cursor: pointer; margin-top: 16px; font-family: 'DM Sans', sans-serif; transition: color 0.15s; }
+  .auth-back:hover { color: rgba(253,250,247,0.7); }
+  .auth-hint { font-size: 13px; color: rgba(253,250,247,0.4); margin-bottom: 24px; line-height: 1.6; }
+  .auth-hint strong { color: rgba(253,250,247,0.7); }
+  .otp-inputs { display: flex; gap: 10px; justify-content: center; margin-bottom: 28px; }
+  .otp-digit { width: 52px; height: 60px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #FDFAF7; font-size: 24px; font-weight: 700; text-align: center; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+  .otp-digit:focus { border-color: var(--accent); background: rgba(200,75,49,0.08); }
+  .resend-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; }
+  .resend-btn { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: underline; }
+  .resend-timer { font-size: 13px; color: rgba(253,250,247,0.4); }
+  .auth-error { background: rgba(200,75,49,0.15); border: 1px solid rgba(200,75,49,0.3); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #ff8a75; margin-bottom: 16px; display: none; }
+  .auth-error.show { display: block; }
+
+  #empView { display: none; }
+  #adminView { display: none; }
+
+  /* TOPBAR */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; gap: 12px; }
+  .topbar-logo { font-family: 'DM Serif Display', serif; font-size: 22px; letter-spacing: -0.3px; flex-shrink: 0; }
+  .topbar-logo span { color: var(--accent); }
+  .admin-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--teal)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+  .user-name { font-size: 14px; font-weight: 500; white-space: nowrap; }
+  .view-pill { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; flex-shrink: 0; }
+  .view-pill-btn { padding: 5px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: none; font-family: 'DM Sans', sans-serif; color: var(--ink-muted); transition: all 0.15s; white-space: nowrap; }
+  .view-pill-btn.active { background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .topbar-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+  .topbar-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .topbar-btn.danger:hover { border-color: var(--accent); color: var(--accent); }
+  .topbar-btn.spinning svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* LAYOUT */
+  .main-layout { max-width: 1100px; margin: 0 auto; padding: 32px 24px; display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+  .stats-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .stat-card.cr::before { background: var(--accent); } .stat-card.ct::before { background: var(--teal); } .stat-card.cg::before { background: var(--gold); } .stat-card.cp::before { background: var(--half); }
+  .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 8px; }
+  .stat-value { font-family: 'DM Serif Display', serif; font-size: 36px; line-height: 1; margin-bottom: 4px; }
+  .stat-card.cr .stat-value { color: var(--accent); } .stat-card.ct .stat-value { color: var(--teal); } .stat-card.cg .stat-value { color: var(--gold); } .stat-card.cp .stat-value { color: var(--half); }
+  .stat-sub { font-size: 12px; color: var(--ink-muted); }
+
+  /* CALENDAR */
+  .calendar-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .cal-month { font-family: 'DM Serif Display', serif; font-size: 22px; }
+  .cal-nav { display: flex; gap: 8px; }
+  .cal-nav-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-muted); transition: all 0.15s; }
+  .cal-nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 8px; }
+  .weekday { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-muted); padding: 4px 0; }
+  .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; border-radius: 10px; cursor: pointer; transition: all 0.15s; position: relative; border: 1.5px solid transparent; user-select: none; }
+  .day-cell:hover:not(.empty):not(.past):not(.weekend):not(.has-leave) { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .day-cell.today { background: var(--ink); color: #fff; font-weight: 700; }
+  .day-cell.empty, .day-cell.past { color: var(--border); cursor: default; }
+  .day-cell.weekend { color: var(--ink-muted); opacity: 0.5; cursor: default; }
+  .day-cell.approved-leave { background: var(--approved-light); color: var(--approved); font-weight: 700; cursor: default; }
+  .day-cell.pending-leave { background: var(--gold-light); color: var(--gold); font-weight: 700; cursor: default; }
+  .day-cell.half-leave { background: var(--half-light); color: var(--half); font-weight: 700; cursor: default; }
+  .day-cell.declined-leave { background: var(--accent-light); color: var(--accent); text-decoration: line-through; cursor: default; }
+  .day-cell.multi-selected { background: var(--ink) !important; color: #fff !important; font-weight: 700; border-color: var(--ink) !important; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  .multi-select-bar { display: none; align-items: center; justify-content: space-between; background: var(--ink); color: #fff; border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; gap: 12px; }
+  .multi-select-bar.visible { display: flex; }
+  .multi-bar-left { font-size: 13px; font-weight: 500; } .multi-bar-left span { color: var(--gold); font-weight: 700; }
+  .multi-bar-btns { display: flex; gap: 8px; }
+  .multi-bar-btn { padding: 7px 16px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .multi-bar-btn.apply { background: var(--accent); color: #fff; } .multi-bar-btn.clear { background: rgba(255,255,255,0.12); color: #fff; }
+  .cal-mode-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-muted); cursor: pointer; user-select: none; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .cal-mode-toggle:hover { border-color: var(--ink); color: var(--ink); }
+  .cal-mode-toggle.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .sidebar { display: flex; flex-direction: column; gap: 20px; }
+  .section-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .section-title { font-family: 'DM Serif Display', serif; font-size: 17px; margin-bottom: 16px; }
+  .leave-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .leave-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .leave-badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; flex-shrink: 0; }
+  .badge-approved { background: var(--approved-light); color: var(--approved); } .badge-pending { background: var(--gold-light); color: var(--gold); } .badge-declined { background: var(--accent-light); color: var(--accent); }
+  .leave-info { flex: 1; } .leave-date { font-size: 13px; font-weight: 600; } .leave-type { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+  .empty-log { color: var(--ink-muted); font-size: 13px; text-align: center; padding: 16px 0; }
+
+  /* MODAL */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(26,20,16,0.55); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--card); border-radius: 20px; padding: 36px 32px; width: 500px; max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(26,20,16,0.2); transform: translateY(16px); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); position: relative; }
+  .modal-backdrop.open .modal { transform: translateY(0); }
+  .modal-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; font-size: 18px; color: var(--ink-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .modal-close:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-date { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 6px; }
+  .modal-subtitle { font-size: 13px; color: var(--ink-muted); margin-bottom: 24px; }
+  .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .option-btn { border: 2px solid var(--border); background: none; border-radius: 14px; padding: 18px 14px; cursor: pointer; transition: all 0.2s; text-align: center; font-family: 'DM Sans', sans-serif; }
+  .option-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+  .option-icon { font-size: 28px; margin-bottom: 8px; } .option-label { font-size: 13px; font-weight: 600; color: var(--ink); } .option-sub { font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
+  .half-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .half-opt { border: 2px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; text-align: center; background: none; font-family: 'DM Sans', sans-serif; }
+  .half-opt:hover, .half-opt.selected { border-color: var(--half); background: var(--half-light); }
+  .half-opt .opt-time { font-size: 13px; font-weight: 600; } .half-opt .opt-range { font-size: 11px; color: var(--ink-muted); }
+  .reason-label { font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 8px; }
+  .reason-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); resize: none; outline: none; transition: border-color 0.2s; background: var(--bg); margin-bottom: 20px; }
+  .reason-input:focus { border-color: var(--accent); }
+  .submit-btn { width: 100%; background: var(--accent); border: none; border-radius: 12px; padding: 15px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: #fff; cursor: pointer; transition: all 0.2s; }
+  .submit-btn:hover { background: #B03C24; transform: translateY(-1px); }
+
+  /* PER-DATE CONFIGURATION */
+  .per-date-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 320px; overflow-y: auto; padding-right: 2px; }
+  .per-date-row { background: var(--bg); border-radius: 12px; padding: 12px 14px; border: 1.5px solid var(--border); transition: border-color 0.2s; }
+  .per-date-row.configured { border-color: var(--approved); background: var(--approved-light); }
+  .per-date-row.configured-half { border-color: var(--half); background: var(--half-light); }
+  .per-date-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .per-date-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .per-date-summary { font-size: 11px; color: var(--ink-muted); font-weight: 500; }
+  .per-date-toggles { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pdt-btn { padding: 5px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--card); font-family: 'DM Sans', sans-serif; color: var(--ink-muted); transition: all 0.15s; }
+  .pdt-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .pdt-btn.sel-full { border-color: var(--approved); background: var(--approved-light); color: var(--approved); }
+  .pdt-btn.sel-1st { border-color: var(--half); background: var(--half-light); color: var(--half); }
+  .pdt-btn.sel-2nd { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
+  .config-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: var(--ink-muted); }
+  .config-progress-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .config-progress-fill { height: 100%; background: var(--approved); border-radius: 2px; transition: width 0.3s; }
+
+  /* ADMIN */
+  .admin-layout { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .admin-tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 28px; width: fit-content; }
+  .admin-tab { padding: 8px 20px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; font-family: 'DM Sans', sans-serif; color: var(--ink-muted); transition: all 0.15s; }
+  .admin-tab.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+  .admin-section-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 20px; }
+  .pending-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .pending-table th { background: var(--ink); color: #fff; padding: 14px 18px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .pending-table td { padding: 14px 18px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .pending-table tr:last-child td { border-bottom: none; }
+  .pending-table tr:hover td { background: var(--bg); }
+  .action-btn { padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all 0.15s; margin-right: 6px; }
+  .action-btn.approve { background: var(--approved-light); color: var(--approved); } .action-btn.approve:hover { background: var(--approved); color: #fff; }
+  .action-btn.decline { background: var(--accent-light); color: var(--accent); } .action-btn.decline:hover { background: var(--accent); color: #fff; }
+  .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .employee-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .emp-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .emp-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--teal)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; }
+  .emp-name { font-size: 14px; font-weight: 600; } .emp-email { font-size: 11px; color: var(--ink-muted); }
+  .emp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .emp-stat { text-align: center; background: var(--bg); border-radius: 8px; padding: 8px 4px; }
+  .emp-stat-val { font-size: 18px; font-weight: 700; } .emp-stat-label { font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .empty-state { text-align: center; padding: 48px; color: var(--ink-muted); font-size: 14px; }
+  .loading-row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 48px; color: var(--ink-muted); font-size: 14px; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+
+  /* SETTINGS */
+  .settings-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .settings-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .settings-card-title { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 6px; }
+  .settings-card-sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 20px; line-height: 1.5; }
+  .people-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; min-height: 40px; }
+  .person-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-radius: 8px; padding: 10px 14px; }
+  .person-email { font-size: 13px; font-weight: 500; }
+  .person-remove { background: none; border: none; color: var(--ink-muted); cursor: pointer; font-size: 16px; padding: 0 4px; transition: color 0.15s; line-height: 1; }
+  .person-remove:hover { color: var(--accent); }
+  .add-person-row { display: flex; gap: 8px; }
+  .add-person-input { flex: 1; border: 1.5px solid var(--border); border-radius: 9px; padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink); outline: none; background: var(--bg); transition: border-color 0.2s; }
+  .add-person-input:focus { border-color: var(--teal); }
+  .add-person-btn { background: var(--teal); border: none; border-radius: 9px; padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; transition: background 0.15s; }
+  .add-person-btn:hover { background: #1e4f4f; }
+  .settings-save-btn { width: 100%; margin-top: 32px; background: var(--approved); border: none; border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer; transition: background 0.15s; }
+  .settings-save-btn:hover { background: #1e5035; }
+  .settings-note { font-size: 12px; color: var(--ink-muted); margin-top: 12px; text-align: center; line-height: 1.5; }
+
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 14px 24px; border-radius: 12px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.35s; z-index: 9999; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 800px) { .main-layout { grid-template-columns: 1fr; } .stats-row, .admin-stats { grid-template-columns: repeat(2,1fr); } .topbar { padding: 0 16px; } .user-name { display: none; } .settings-layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- EMAIL -->
+<div class="auth-screen" id="emailScreen">
+  <div class="auth-card">
+    <div class="auth-logo">Leave<span>Desk</span></div>
+    <div class="auth-tagline">Employee Leave Portal</div>
+    <div class="auth-error" id="emailError"></div>
+    <label class="auth-label" for="emailInput">Your Work Email</label>
+    <input id="emailInput" class="auth-input" type="email" placeholder="you@company.com" />
+    <button class="auth-btn" id="sendOtpBtn" onclick="sendOTP()">Send OTP →</button>
+  </div>
+</div>
+
+<!-- OTP -->
+<div class="auth-screen" id="otpScreen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">Leave<span>Desk</span></div>
+    <div class="auth-tagline">Verify Your Identity</div>
+    <div class="auth-error" id="otpError"></div>
+    <p class="auth-hint">A 6-digit code was sent to<br><strong id="otpEmailLabel"></strong></p>
+    <div class="otp-inputs">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" />
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" />
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" />
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" />
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" />
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" />
+    </div>
+    <button class="auth-btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify &amp; Login →</button>
+    <div class="resend-row">
+      <span class="resend-timer" id="resendTimer">Resend in 60s</span>
+      <button class="resend-btn" id="resendBtn" style="display:none;" onclick="sendOTP(true)">Resend OTP</button>
+    </div>
+    <br>
+    <button class="auth-back" onclick="backToEmail()">← Use a different email</button>
+  </div>
+</div>
+
+<!-- EMPLOYEE VIEW -->
+<div id="empView">
+  <nav class="topbar">
+    <div class="topbar-logo">Leave<span>Desk</span></div>
+    <div class="topbar-right">
+      <div class="user-avatar" id="empAvatar"></div>
+      <span class="user-name" id="empName"></span>
+      <div class="view-pill" id="adminPill" style="display:none;">
+        <button class="view-pill-btn active" id="pillEmp" onclick="goTo('emp')">My Leaves</button>
+        <button class="view-pill-btn" id="pillAdmin" onclick="goTo('admin')">Admin View</button>
+      </div>
+      <button class="topbar-btn" id="empRefreshBtn" onclick="empRefresh()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+      <button class="topbar-btn danger" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+  <div class="main-layout">
+    <div class="stats-row">
+      <div class="stat-card cr"><div class="stat-label">Leaves Taken</div><div class="stat-value" id="statTaken">0</div><div class="stat-sub">This year</div></div>
+      <div class="stat-card ct"><div class="stat-label">Leave Balance</div><div class="stat-value" id="statBalance">20</div><div class="stat-sub">Days remaining</div></div>
+      <div class="stat-card cg"><div class="stat-label">Pending</div><div class="stat-value" id="statPending">0</div><div class="stat-sub">Awaiting approval</div></div>
+      <div class="stat-card cp"><div class="stat-label">Half Days</div><div class="stat-value" id="statHalf">0</div><div class="stat-sub">This year</div></div>
+    </div>
+    <div>
+      <div class="calendar-card">
+        <div class="calendar-header">
+          <div class="cal-month" id="calMonthLabel"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="cal-mode-toggle" id="multiToggle" onclick="toggleMultiMode()">✦ Multi-select</button>
+            <div class="cal-nav">
+              <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+              <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+            </div>
+          </div>
+        </div>
+        <div class="multi-select-bar" id="multiBar">
+          <div class="multi-bar-left"><span id="multiCount">0</span> dates selected</div>
+          <div class="multi-bar-btns">
+            <button class="multi-bar-btn clear" onclick="clearMultiSelection()">Clear</button>
+            <button class="multi-bar-btn apply" onclick="openMultiModal()">Configure Leaves →</button>
+          </div>
+        </div>
+        <div class="weekdays"><div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div><div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div></div>
+        <div class="days-grid" id="daysGrid"></div>
+        <div class="cal-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--approved-light);border:1.5px solid var(--approved)"></div>Approved</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold-light);border:1.5px solid var(--gold)"></div>Pending</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--half-light);border:1.5px solid var(--half)"></div>Half Day</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent-light);border:1.5px solid var(--accent)"></div>Declined</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="section-card"><div class="section-title">Recent Activity</div><div id="leaveLog"><div class="empty-log">No leaves applied yet</div></div></div>
+      <div class="section-card"><div class="section-title">How it works</div><div style="font-size:13px;color:var(--ink-muted);line-height:1.8;"><p>1. Click any future date on the calendar.</p><p>2. Choose <strong>Full Day</strong> or <strong>Half Day</strong>.</p><p>3. Your manager gets an approval email.</p><p>4. You'll be notified once it's reviewed.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN VIEW -->
+<div id="adminView">
+  <nav class="topbar">
+    <div class="topbar-logo">Leave<span>Desk</span><span class="admin-badge">Admin</span></div>
+    <div class="topbar-right">
+      <div class="user-avatar" id="adminAvatar"></div>
+      <span class="user-name" id="adminName"></span>
+      <div class="view-pill">
+        <button class="view-pill-btn" onclick="goTo('emp')">My Leaves</button>
+        <button class="view-pill-btn active" onclick="goTo('admin')">Admin View</button>
+      </div>
+      <button class="topbar-btn" id="adminRefreshBtn" onclick="adminRefresh()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+      <button class="topbar-btn danger" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+  <div class="admin-layout">
+    <div class="admin-stats">
+      <div class="stat-card cg"><div class="stat-label">Pending Requests</div><div class="stat-value" id="adminPending" style="color:var(--gold)">—</div><div class="stat-sub">Awaiting review</div></div>
+      <div class="stat-card ct"><div class="stat-label">Total Employees</div><div class="stat-value" id="adminEmployees" style="color:var(--teal)">—</div><div class="stat-sub">Active</div></div>
+      <div class="stat-card cr"><div class="stat-label">On Leave Today</div><div class="stat-value" id="adminOnLeave" style="color:var(--accent)">—</div><div class="stat-sub">Approved</div></div>
+      <div class="stat-card cp"><div class="stat-label">Approved This Month</div><div class="stat-value" id="adminApproved" style="color:var(--half)">—</div><div class="stat-sub">This month</div></div>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('pending')">⏳ Pending Approvals</button>
+      <button class="admin-tab" onclick="switchTab('employees')">👥 All Employees</button>
+      <button class="admin-tab" onclick="switchTab('settings')">⚙️ Settings</button>
+    </div>
+    <div id="tabPending" class="tab-panel active">
+      <div class="admin-section-title">Pending Leave Requests</div>
+      <div id="pendingTable"><div class="loading-row"><div class="spinner"></div>Loading…</div></div>
+    </div>
+    <div id="tabEmployees" class="tab-panel">
+      <div class="admin-section-title">Employee Leave Summary</div>
+      <div class="employee-grid" id="employeeGrid"><div class="loading-row"><div class="spinner"></div>Loading…</div></div>
+    </div>
+    <div id="tabSettings" class="tab-panel">
+      <div class="admin-section-title">Team Settings</div>
+      <div class="settings-layout">
+        <div class="settings-card">
+          <div class="settings-card-title">Managers</div>
+          <div class="settings-card-sub">Managers receive approval emails and can approve or decline leave requests.</div>
+          <div class="people-list" id="managersList"></div>
+          <div class="add-person-row">
+            <input class="add-person-input" id="addManagerInput" type="email" placeholder="manager@company.com" />
+            <button class="add-person-btn" onclick="addPerson('manager')">Add</button>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Admins</div>
+          <div class="settings-card-sub">Admins can access this dashboard, view all employees, and manage settings.</div>
+          <div class="people-list" id="adminsList"></div>
+          <div class="add-person-row">
+            <input class="add-person-input" id="addAdminInput" type="email" placeholder="admin@company.com" />
+            <button class="add-person-btn" onclick="addPerson('admin')">Add</button>
+          </div>
+        </div>
+      </div>
+      <button class="settings-save-btn" onclick="saveSettings()">💾 Save Settings</button>
+      <p class="settings-note">Changes take effect immediately for new leave requests.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SINGLE DATE MODAL -->
+<div class="modal-backdrop" id="applyModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-date" id="modalDateLabel"></div>
+    <div class="modal-subtitle" id="modalSubtitle">Select your leave type</div>
+
+    <!-- Step 1: type -->
+    <div id="step1">
+      <div class="option-grid">
+        <button class="option-btn" onclick="selectType('full')">
+          <div class="option-icon">🏖️</div><div class="option-label">Full Day</div><div class="option-sub">Entire day off</div>
+        </button>
+        <button class="option-btn" onclick="selectType('half')">
+          <div class="option-icon">⏰</div><div class="option-label">Half Day</div><div class="option-sub">Morning or afternoon</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: which half (single date) -->
+    <div id="step2" style="display:none;">
+      <div class="modal-subtitle" style="margin-bottom:14px;">Which half?</div>
+      <div class="half-options">
+        <button class="half-opt" onclick="selectHalf('1st')"><div class="opt-time">1st Half</div><div class="opt-range">9:00 AM – 1:00 PM</div></button>
+        <button class="half-opt" onclick="selectHalf('2nd')"><div class="opt-time">2nd Half</div><div class="opt-range">1:00 PM – 6:00 PM</div></button>
+      </div>
+      <div class="reason-label">Reason (optional)</div>
+      <textarea class="reason-input" id="reasonInputHalf" rows="3" placeholder="Add a note for your manager…"></textarea>
+      <button class="submit-btn" onclick="submitLeave()">Send for Approval</button>
+    </div>
+
+    <!-- Step 3: full day reason -->
+    <div id="step3" style="display:none;">
+      <div class="reason-label">Reason (optional)</div>
+      <textarea class="reason-input" id="reasonInputFull" rows="3" placeholder="Add a note for your manager…"></textarea>
+      <button class="submit-btn" onclick="submitLeave()">Send for Approval</button>
+    </div>
+  </div>
+</div>
+
+<!-- MULTI-DATE MODAL -->
+<div class="modal-backdrop" id="multiModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeMultiModal()">×</button>
+    <div class="modal-date" id="multiModalTitle"></div>
+    <div class="modal-subtitle">Set the leave type for each date, then add a reason.</div>
+
+    <!-- Progress indicator -->
+    <div class="config-progress">
+      <span id="configProgressText">0 of 0 configured</span>
+      <div class="config-progress-bar"><div class="config-progress-fill" id="configProgressFill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Per-date list -->
+    <div class="per-date-list" id="perDateList"></div>
+
+    <!-- Reason -->
+    <div class="reason-label">Reason (optional)</div>
+    <textarea class="reason-input" id="reasonInputMulti" rows="2" placeholder="Add a note for your manager…"></textarea>
+    <button class="submit-btn" id="multiSubmitBtn" onclick="submitMultiConfigured()">Send for Approval</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const N8N_BASE     = 'https://shimonaj.app.n8n.cloud/webhook';
+const TOTAL_LEAVES = 20;
+const MONTHS       = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let managers = ['sagar.shah@mecstudio.com'];
+let admins   = ['sagar.shah@mecstudio.com'];
+
+let currentUser = null, isAdmin = false;
+let viewYear, viewMonth;
+let selectedDate = null, selectedType = null, selectedHalf = null;
+let leaveData = {}, multiMode = false, multiDates = new Set();
+let pendingEmail = null, resendInterval = null;
+
+// Per-date configuration: { date: { type: 'full'|'half', half: '1st'|'2nd'|null } }
+let perDateConfig = {};
+
+const G   = id => document.getElementById(id);
+const pad = n  => String(n).padStart(2,'0');
+const dk  = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+
+function showToast(msg){ const t=G('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
+
+// ── SETTINGS ─────────────────────────────────────────
+function loadSettings(){ try{ const s=JSON.parse(localStorage.getItem('ld_settings')||'{}'); if(Array.isArray(s.managers)&&s.managers.length) managers=s.managers; if(Array.isArray(s.admins)&&s.admins.length) admins=s.admins; }catch(e){} }
+function persistSettings(){ localStorage.setItem('ld_settings',JSON.stringify({managers,admins})); }
+function managerEmailsList(){ return managers.join(','); }
+
+// ── SESSION ──────────────────────────────────────────
+function saveSession(e,a){ localStorage.setItem('lds',JSON.stringify({email:e,admin:a})); }
+function clearSession(){ localStorage.removeItem('lds'); }
+function getSavedSession(){ try{ return JSON.parse(localStorage.getItem('lds')); }catch{ return null; } }
+
+window.addEventListener('DOMContentLoaded',()=>{
+  loadSettings(); setupOTPInputs();
+  const s=getSavedSession();
+  if(s&&s.email){ currentUser=s.email; isAdmin=s.admin||admins.includes(s.email.toLowerCase()); bootUser(); }
+});
+
+// ── BOOT ─────────────────────────────────────────────
+function bootUser(){
+  const name=currentUser.split('@')[0].replace(/[._-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  G('empAvatar').textContent=initials; G('empName').textContent=name;
+  G('adminAvatar').textContent=initials;
+  G('adminAvatar').style.background=isAdmin?'linear-gradient(135deg,#C84B31,#8B2010)':'linear-gradient(135deg,var(--accent),var(--teal))';
+  G('adminName').textContent=name;
+  if(isAdmin) G('adminPill').style.display='flex';
+  loadUserData();
+  const now=new Date(); viewYear=now.getFullYear(); viewMonth=now.getMonth();
+  renderCalendar(); updateStats(); updateLog();
+  loadFromN8n(currentUser);
+  if(isAdmin){ showView('admin'); adminRefresh(); } else showView('emp');
+}
+function showView(v){ G('emailScreen').style.display='none'; G('otpScreen').style.display='none'; G('empView').style.display=v==='emp'?'block':'none'; G('adminView').style.display=v==='admin'?'block':'none'; }
+function goTo(v){ showView(v); if(v==='emp'){ loadUserData(); renderCalendar(); updateStats(); updateLog(); loadFromN8n(currentUser); } else adminRefresh(); }
+
+// ── OTP ──────────────────────────────────────────────
+async function sendOTP(isResend=false){
+  const email=G('emailInput').value.trim();
+  if(!email||!email.includes('@')){ showAE('emailError','Please enter a valid email address'); return; }
+  const btn=G('sendOtpBtn'); btn.disabled=true; btn.textContent='Sending…'; hideAE('emailError');
+  try{
+    const res=await fetch(`${N8N_BASE}/leave-otp-send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const data=await res.json();
+    if(data.success){ pendingEmail=email; G('emailScreen').style.display='none'; G('otpScreen').style.display='flex'; G('otpEmailLabel').textContent=email; if(!isResend) document.querySelectorAll('.otp-digit')[0].focus(); startResendTimer(); if(isResend) showToast('New OTP sent ✓'); }
+    else showAE('emailError',data.error||'Failed to send OTP');
+  }catch(e){ showAE('emailError','Network error — please try again'); }
+  btn.disabled=false; btn.textContent='Send OTP →';
+}
+function startResendTimer(){ let s=60; G('resendBtn').style.display='none'; G('resendTimer').style.display='inline'; G('resendTimer').textContent=`Resend in ${s}s`; clearInterval(resendInterval); resendInterval=setInterval(()=>{ s--; if(s<=0){ clearInterval(resendInterval); G('resendTimer').style.display='none'; G('resendBtn').style.display='inline'; } else G('resendTimer').textContent=`Resend in ${s}s`; },1000); }
+async function verifyOTP(){
+  const digits=[...document.querySelectorAll('.otp-digit')], otp=digits.map(d=>d.value).join('');
+  if(otp.length!==6){ showAE('otpError','Please enter the complete 6-digit code'); return; }
+  const btn=G('verifyOtpBtn'); btn.disabled=true; btn.textContent='Verifying…'; hideAE('otpError');
+  try{
+    const res=await fetch(`${N8N_BASE}/leave-otp-verify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingEmail,otp})});
+    const data=await res.json();
+    if(data.success){ currentUser=data.email; isAdmin=data.isAdmin||admins.includes(data.email.toLowerCase()); saveSession(currentUser,isAdmin); clearInterval(resendInterval); G('otpScreen').style.display='none'; bootUser(); }
+    else{ showAE('otpError',data.error||'Invalid OTP'); digits.forEach(d=>d.style.borderColor='rgba(200,75,49,0.6)'); }
+  }catch(e){ showAE('otpError','Network error — please try again'); }
+  btn.disabled=false; btn.textContent='Verify & Login →';
+}
+function backToEmail(){ G('otpScreen').style.display='none'; G('emailScreen').style.display='flex'; clearInterval(resendInterval); document.querySelectorAll('.otp-digit').forEach(d=>d.value=''); }
+function showAE(id,msg){ const e=G(id); e.textContent=msg; e.classList.add('show'); }
+function hideAE(id){ G(id).classList.remove('show'); }
+function setupOTPInputs(){
+  const digits=document.querySelectorAll('.otp-digit');
+  digits.forEach((inp,i)=>{
+    inp.addEventListener('input',e=>{ const v=e.target.value.replace(/\D/g,''); e.target.value=v.slice(-1); if(v&&i<digits.length-1) digits[i+1].focus(); if([...digits].every(d=>d.value)) verifyOTP(); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Backspace'&&!inp.value&&i>0) digits[i-1].focus(); });
+    inp.addEventListener('paste',e=>{ const p=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6); if(p.length===6){ digits.forEach((d,idx)=>d.value=p[idx]||''); digits[5].focus(); setTimeout(verifyOTP,100); } e.preventDefault(); });
+  });
+}
+function logout(){ clearSession(); currentUser=null; isAdmin=false; leaveData={}; multiMode=false; multiDates.clear(); G('empView').style.display='none'; G('adminView').style.display='none'; G('emailScreen').style.display='flex'; G('emailInput').value=''; G('adminPill').style.display='none'; document.querySelectorAll('.otp-digit').forEach(d=>d.value=''); }
+
+// ── EMPLOYEE DATA ────────────────────────────────────
+function loadUserData(){ const s=localStorage.getItem('ld_'+currentUser); leaveData=s?JSON.parse(s):{}; }
+function saveUserData(){ localStorage.setItem('ld_'+currentUser,JSON.stringify(leaveData)); }
+function renderCalendar(){
+  G('calMonthLabel').textContent=`${MONTHS[viewMonth]} ${viewYear}`;
+  const grid=G('daysGrid'); grid.innerHTML='';
+  const first=new Date(viewYear,viewMonth,1).getDay(), total=new Date(viewYear,viewMonth+1,0).getDate(), today=new Date();
+  for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='day-cell empty'; grid.appendChild(e); }
+  for(let d=1;d<=total;d++){
+    const el=document.createElement('div'), key=dk(viewYear,viewMonth,d);
+    const dow=new Date(viewYear,viewMonth,d).getDay();
+    const isToday=today.getFullYear()===viewYear&&today.getMonth()===viewMonth&&today.getDate()===d;
+    const isPast=new Date(viewYear,viewMonth,d)<new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const isWeekend=dow===0||dow===6, leave=leaveData[key];
+    el.className='day-cell'; el.textContent=d;
+    if(isToday) el.classList.add('today'); else if(isPast) el.classList.add('past'); else if(isWeekend) el.classList.add('weekend');
+    if(leave){ el.classList.remove('past','today','weekend'); el.classList.add('has-leave'); if(leave.status==='approved') el.classList.add(leave.type==='half'?'half-leave':'approved-leave'); else if(leave.status==='pending') el.classList.add('pending-leave'); else if(leave.status==='declined') el.classList.add('declined-leave'); }
+    if(!isPast&&!isWeekend&&!leave){ el.onclick=()=>{ if(multiMode) toggleMultiDate(key,el); else openModal(viewYear,viewMonth,d); }; }
+    grid.appendChild(el);
+  }
+}
+function changeMonth(dir){ viewMonth+=dir; if(viewMonth>11){viewMonth=0;viewYear++;} if(viewMonth<0){viewMonth=11;viewYear--;} renderCalendar(); }
+function updateStats(){ const a=Object.values(leaveData),t=a.filter(l=>l.status==='approved'&&l.type==='full').length,h=a.filter(l=>l.status==='approved'&&l.type==='half').length,p=a.filter(l=>l.status==='pending').length; G('statTaken').textContent=t; G('statBalance').textContent=Math.max(0,TOTAL_LEAVES-t-h*.5); G('statPending').textContent=p; G('statHalf').textContent=h; }
+function updateLog(){ const log=G('leaveLog'),entries=Object.entries(leaveData).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8); if(!entries.length){log.innerHTML='<div class="empty-log">No leaves applied yet</div>';return;} log.innerHTML=entries.map(([k,l])=>{ const[y,m,d]=k.split('-'),ds=`${d} ${MONTHS[parseInt(m)-1]} ${y}`,cls=l.status==='approved'?'badge-approved':l.status==='pending'?'badge-pending':'badge-declined',ts=l.type==='half'?`Half Day (${l.half} Half)`:'Full Day'; return`<div class="leave-item"><div class="leave-badge ${cls}">${l.status}</div><div class="leave-info"><div class="leave-date">${ds}</div><div class="leave-type">${ts}</div></div></div>`; }).join(''); }
+async function loadFromN8n(email){ try{ const res=await fetch(`${N8N_BASE}/leave-sync?email=${encodeURIComponent(email)}`,{headers:{'Accept':'application/json'},mode:'cors'}); if(!res.ok) return; const data=await res.json(); if(data.success&&data.leave_map){ leaveData={...leaveData,...data.leave_map}; G('statTaken').textContent=data.stats.approved_full; G('statBalance').textContent=data.stats.balance; G('statPending').textContent=data.stats.pending; G('statHalf').textContent=data.stats.approved_half; saveUserData(); renderCalendar(); updateLog(); } }catch(e){ console.warn('sync failed',e); } }
+async function empRefresh(){ if(!currentUser) return; const btn=G('empRefreshBtn'); btn.classList.add('spinning'); showToast('Refreshing…'); await loadFromN8n(currentUser); btn.classList.remove('spinning'); showToast('Refreshed ✓'); }
+
+// ── MULTI SELECT ─────────────────────────────────────
+function toggleMultiMode(){ multiMode=!multiMode; multiDates.clear(); G('multiToggle').classList.toggle('active',multiMode); G('multiToggle').textContent=multiMode?'✕ Cancel':'✦ Multi-select'; G('multiBar').classList.remove('visible'); renderCalendar(); }
+function toggleMultiDate(key,el){ if(multiDates.has(key)){multiDates.delete(key);el.classList.remove('multi-selected');}else{multiDates.add(key);el.classList.add('multi-selected');} G('multiCount').textContent=multiDates.size; G('multiBar').classList.toggle('visible',multiDates.size>0); }
+function clearMultiSelection(){ multiDates.clear(); G('multiBar').classList.remove('visible'); renderCalendar(); }
+
+// ── SINGLE DATE MODAL ─────────────────────────────────
+function openModal(y,m,d){
+  selectedDate=dk(y,m,d); selectedType=null; selectedHalf=null;
+  G('modalDateLabel').textContent=new Date(y,m,d).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  G('modalSubtitle').textContent='Select your leave type';
+  G('step1').style.display='block'; G('step2').style.display='none'; G('step3').style.display='none';
+  G('reasonInputHalf').value=''; G('reasonInputFull').value='';
+  G('applyModal').classList.add('open');
+}
+function closeModal(){ G('applyModal').classList.remove('open'); }
+function selectType(t){
+  selectedType=t;
+  G('step1').style.display='none';
+  if(t==='half') G('step2').style.display='block'; else G('step3').style.display='block';
+}
+function selectHalf(h){ selectedHalf=h; document.querySelectorAll('#step2 .half-opt').forEach(b=>b.classList.toggle('selected',b.textContent.includes(h))); }
+function submitLeave(){
+  if(selectedType==='half'&&!selectedHalf){showToast('Please select 1st or 2nd half');return;}
+  const reason=selectedType==='half'?G('reasonInputHalf').value:G('reasonInputFull').value;
+  leaveData[selectedDate]={type:selectedType,status:'pending',half:selectedHalf,reason,appliedAt:new Date().toISOString()};
+  saveUserData(); closeModal(); renderCalendar(); updateStats(); updateLog();
+  showToast('Leave request sent ✓');
+  fetch(`${N8N_BASE}/leave-apply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employee_email:currentUser,employee_name:G('empName').textContent,date:selectedDate,type:selectedType,half:selectedHalf,reason,manager_email:managerEmailsList()})}).catch(e=>console.warn(e));
+}
+
+// ── MULTI DATE MODAL ──────────────────────────────────
+function openMultiModal(){
+  if(!multiDates.size) return;
+  const dates=[...multiDates].sort();
+  perDateConfig={};
+  dates.forEach(d=>perDateConfig[d]={type:null,half:null});
+
+  G('multiModalTitle').textContent=`${dates.length} Date${dates.length>1?'s':''} Selected`;
+  G('reasonInputMulti').value='';
+  buildPerDateList(dates);
+  updateMultiProgress(dates);
+  G('multiModal').classList.add('open');
+}
+function closeMultiModal(){ G('multiModal').classList.remove('open'); }
+
+function buildPerDateList(dates){
+  G('perDateList').innerHTML=dates.map(d=>{
+    const label=new Date(d).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+    return`<div class="per-date-row" id="pdr-${d}">
+      <div class="per-date-header">
+        <span class="per-date-label">📅 ${label}</span>
+        <span class="per-date-summary" id="pds-${d}">Not set</span>
+      </div>
+      <div class="per-date-toggles">
+        <button class="pdt-btn" id="pdt-${d}-full" onclick="setPerDate('${d}','full',null)">🏖️ Full Day</button>
+        <button class="pdt-btn" id="pdt-${d}-1st"  onclick="setPerDate('${d}','half','1st')">🌅 1st Half</button>
+        <button class="pdt-btn" id="pdt-${d}-2nd"  onclick="setPerDate('${d}','half','2nd')">🌇 2nd Half</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setPerDate(date, type, half){
+  perDateConfig[date]={type,half};
+  const row=G(`pdr-${date}`);
+  // Reset all buttons
+  [`pdt-${date}-full`,`pdt-${date}-1st`,`pdt-${date}-2nd`].forEach(id=>{ const b=G(id); if(b){ b.className='pdt-btn'; } });
+  // Highlight selected
+  if(type==='full'){
+    G(`pdt-${date}-full`).className='pdt-btn sel-full';
+    G(`pds-${date}`).textContent='✓ Full Day';
+    row.className='per-date-row configured';
+  } else if(half==='1st'){
+    G(`pdt-${date}-1st`).className='pdt-btn sel-1st';
+    G(`pds-${date}`).textContent='✓ 1st Half';
+    row.className='per-date-row configured-half';
+  } else {
+    G(`pdt-${date}-2nd`).className='pdt-btn sel-2nd';
+    G(`pds-${date}`).textContent='✓ 2nd Half';
+    row.className='per-date-row configured-half';
+  }
+  updateMultiProgress([...multiDates].sort());
+}
+
+function updateMultiProgress(dates){
+  const configured=dates.filter(d=>perDateConfig[d]&&perDateConfig[d].type!==null).length;
+  const pct=dates.length?Math.round(configured/dates.length*100):0;
+  G('configProgressText').textContent=`${configured} of ${dates.length} configured`;
+  G('configProgressFill').style.width=pct+'%';
+  G('multiSubmitBtn').style.opacity=configured===dates.length?'1':'0.5';
+}
+
+async function submitMultiConfigured(){
+  const dates=[...multiDates].sort();
+  const unconfigured=dates.filter(d=>!perDateConfig[d]||perDateConfig[d].type===null);
+  if(unconfigured.length){
+    showToast(`Please configure all ${unconfigured.length} remaining date${unconfigured.length>1?'s':''}`);
+    // Scroll to first unconfigured
+    const firstEl=G(`pdr-${unconfigured[0]}`);
+    if(firstEl) firstEl.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  const reason=G('reasonInputMulti').value;
+
+  // Save to local data
+  dates.forEach(date=>{
+    const cfg=perDateConfig[date];
+    leaveData[date]={type:cfg.type,status:'pending',half:cfg.half,reason,appliedAt:new Date().toISOString()};
+  });
+  saveUserData();
+
+  // Close and reset
+  closeMultiModal();
+  multiMode=false; multiDates.clear();
+  G('multiToggle').classList.remove('active'); G('multiToggle').textContent='✦ Multi-select';
+  G('multiBar').classList.remove('visible');
+  renderCalendar(); updateStats(); updateLog();
+
+  // Count types for toast
+  const fullDays=dates.filter(d=>perDateConfig[d].type==='full').length;
+  const halfDays=dates.filter(d=>perDateConfig[d].type==='half').length;
+  const parts=[];
+  if(fullDays) parts.push(`${fullDays} full day${fullDays>1?'s':''}`);
+  if(halfDays) parts.push(`${halfDays} half day${halfDays>1?'s':''}`);
+  showToast(`${parts.join(' + ')} sent for approval ✓`);
+
+  // Group by type+half for efficient webhook calls
+  // Send separate calls for different types (each group needs its own webhook)
+  const groups={};
+  dates.forEach(date=>{
+    const cfg=perDateConfig[date];
+    const key=`${cfg.type}_${cfg.half||''}`;
+    if(!groups[key]) groups[key]={type:cfg.type,half:cfg.half,dates:[]};
+    groups[key].dates.push(date);
+  });
+
+  for(const grp of Object.values(groups)){
+    try{
+      await fetch(`${N8N_BASE}/leave-apply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        employee_email:currentUser,
+        employee_name:G('empName').textContent,
+        date:grp.dates[0],
+        dates:grp.dates,
+        type:grp.type,
+        half:grp.half,
+        reason,
+        manager_email:managerEmailsList()
+      })});
+    }catch(e){console.warn(e);}
+  }
+}
+
+// ── ADMIN ────────────────────────────────────────────
+async function adminRefresh(){
+  const btn=G('adminRefreshBtn'); if(btn) btn.classList.add('spinning');
+  G('pendingTable').innerHTML='<div class="loading-row"><div class="spinner"></div>Loading…</div>';
+  G('employeeGrid').innerHTML='<div class="loading-row"><div class="spinner"></div>Loading…</div>';
+  try{
+    const res=await fetch(`${N8N_BASE}/leave-sync?email=ALL`,{headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    let rows=[];
+    if(Array.isArray(data)) rows=data;
+    else if(Array.isArray(data.all_leaves)) rows=data.all_leaves;
+    else if(Array.isArray(data.data)) rows=data.data;
+    else if(Array.isArray(data.rows)) rows=data.rows;
+    renderAdminDashboard(rows);
+  }catch(e){
+    const msg=`<div class="empty-state">⚠️ Could not load data<br><small style="font-size:12px;margin-top:8px;display:block;color:var(--ink-muted)">Make sure leave-sync is published and handles <code>email=ALL</code></small></div>`;
+    G('pendingTable').innerHTML=msg; G('employeeGrid').innerHTML=msg;
+    ['adminPending','adminEmployees','adminOnLeave','adminApproved'].forEach(id=>G(id).textContent='—');
+    showToast('Could not load admin data');
+  }
+  if(btn) btn.classList.remove('spinning');
+  renderSettingsTab();
+}
+
+function renderAdminDashboard(rows){
+  const today=new Date().toISOString().split('T')[0], thisMo=new Date().toISOString().slice(0,7);
+  const f=(r,...ks)=>{ for(const k of ks){ if(r[k]!==undefined&&r[k]!==null&&r[k]!=='') return r[k]; } return ''; };
+  const N=rows.map(r=>({ status:(f(r,'Status','status')||'').toLowerCase(), date:f(r,'Date','date'), email:f(r,'Employee Email','employee_email'), name:f(r,'Employee Name','employee_name'), type:f(r,'Leave Type','leave_type')||'full', half:f(r,'Half Period','half_period'), reason:f(r,'Reason','reason'), rowId:f(r,'Row ID','row_id'), appliedAt:f(r,'Applied At','applied_at') }));
+  const pending=N.filter(r=>r.status==='pending'), onToday=N.filter(r=>r.date===today&&r.status==='approved'), thisMoApp=N.filter(r=>r.date.startsWith(thisMo)&&r.status==='approved'), emps=[...new Set(N.map(r=>r.email).filter(Boolean))];
+  G('adminPending').textContent=pending.length; G('adminEmployees').textContent=emps.length; G('adminOnLeave').textContent=onToday.length; G('adminApproved').textContent=thisMoApp.length;
+  G('pendingTable').innerHTML=pending.length===0?'<div class="empty-state">No pending requests 🎉</div>':
+    `<table class="pending-table"><thead><tr><th>Employee</th><th>Date</th><th>Type</th><th>Reason</th><th>Applied</th><th>Actions</th></tr></thead><tbody>${pending.map(r=>{const tl=r.type==='half'?`Half Day (${r.half||'?'})`:'Full Day',ap=r.appliedAt?new Date(r.appliedAt).toLocaleDateString('en-IN'):'—',nm=r.name||r.email.split('@')[0]; return`<tr><td><strong>${nm}</strong><br><span style="font-size:11px;color:var(--ink-muted)">${r.email}</span></td><td>${r.date}</td><td>${tl}</td><td>${r.reason||'—'}</td><td>${ap}</td><td><button class="action-btn approve" onclick="adminAction('${r.rowId}','${r.email}','${r.date}','approve')">✓ Approve</button><button class="action-btn decline" onclick="adminAction('${r.rowId}','${r.email}','${r.date}','decline')">✗ Decline</button></td></tr>`; }).join('')}</tbody></table>`;
+  const em={};
+  N.forEach(r=>{ if(!r.email) return; if(!em[r.email]) em[r.email]={name:r.name||r.email.split('@')[0],rows:[]}; em[r.email].rows.push(r); });
+  if(!Object.keys(em).length){ G('employeeGrid').innerHTML='<div class="empty-state">No employee leave data yet</div>'; return; }
+  G('employeeGrid').innerHTML=Object.entries(em).map(([email,e])=>{ const t=e.rows.filter(r=>r.status==='approved'&&r.type!=='half').length,h=e.rows.filter(r=>r.status==='approved'&&r.type==='half').length,p=e.rows.filter(r=>r.status==='pending').length,b=Math.max(0,TOTAL_LEAVES-t-h*.5),in2=e.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); return`<div class="employee-card"><div class="emp-header"><div class="emp-avatar">${in2}</div><div><div class="emp-name">${e.name}</div><div class="emp-email">${email}</div></div></div><div class="emp-stats"><div class="emp-stat"><div class="emp-stat-val" style="color:var(--accent)">${t}</div><div class="emp-stat-label">Taken</div></div><div class="emp-stat"><div class="emp-stat-val" style="color:var(--teal)">${b}</div><div class="emp-stat-label">Balance</div></div><div class="emp-stat"><div class="emp-stat-val" style="color:var(--gold)">${p}</div><div class="emp-stat-label">Pending</div></div></div></div>`; }).join('');
+}
+
+async function adminAction(rowId,empEmail,date,action){ showToast(`${action==='approve'?'Approving':'Declining'}…`); try{ await fetch(`${N8N_BASE}/leave-action?id=${encodeURIComponent(rowId)}&action=${action}&employee=${encodeURIComponent(empEmail)}&date=${date}&dates=${date}`); showToast(action==='approve'?'Leave approved ✓':'Leave declined ✓'); setTimeout(adminRefresh,1500); }catch(e){showToast('Action failed');} }
+
+function switchTab(tab){ document.querySelectorAll('.admin-tab').forEach((t,i)=>t.classList.toggle('active',['pending','employees','settings'][i]===tab)); G('tabPending').classList.toggle('active',tab==='pending'); G('tabEmployees').classList.toggle('active',tab==='employees'); G('tabSettings').classList.toggle('active',tab==='settings'); if(tab==='settings') renderSettingsTab(); }
+
+// ── SETTINGS TAB ─────────────────────────────────────
+function renderSettingsTab(){ renderPeopleList('managersList',managers,'manager'); renderPeopleList('adminsList',admins,'admin'); }
+function renderPeopleList(cid,list,type){ const el=G(cid); if(!list.length){ el.innerHTML=`<div style="font-size:13px;color:var(--ink-muted);padding:8px 0;">No ${type}s added yet</div>`; return; } el.innerHTML=list.map((email,i)=>`<div class="person-row"><span class="person-email">${email}</span><button class="person-remove" onclick="removePerson('${type}',${i})">×</button></div>`).join(''); }
+function addPerson(type){ const id=type==='manager'?'addManagerInput':'addAdminInput'; const email=G(id).value.trim().toLowerCase(); if(!email||!email.includes('@')){ showToast('Please enter a valid email'); return; } const list=type==='manager'?managers:admins; if(list.includes(email)){ showToast('Already in the list'); return; } list.push(email); G(id).value=''; renderPeopleList(type==='manager'?'managersList':'adminsList',list,type); showToast(`${email} added as ${type}`); }
+function removePerson(type,idx){ const list=type==='manager'?managers:admins; if(list.length<=1){ showToast(`Must have at least one ${type}`); return; } const removed=list.splice(idx,1)[0]; renderPeopleList(type==='manager'?'managersList':'adminsList',list,type); showToast(`${removed} removed`); }
+function saveSettings(){ persistSettings(); showToast('Settings saved ✓'); }
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeMultiModal(); } });
+</script>
+</body>
+</html>
